@@ -5,11 +5,11 @@ class Contenedor {
         this.lastId = 0
         this.productos = []
         this.archivo = new Archivo(archivo)
-        this.getAll().then(data => this.lastId = this.maxId())
+        
     }
     async save(objeto){
         try{
-            await this.getAll()
+            await this.getAll().then(data => this.lastId = this.maxId())
             this.lastId++
             this.productos.push({...objeto, id: this.lastId})
             await this.archivo.escribir(this.productos)
@@ -45,35 +45,15 @@ class Contenedor {
         this.productos = []
         await this.archivo.escribir(this.productos)
     }
+    async getRandom(){
+        await this.getAll()
+        let idDisponibles = this.productos.map(producto => producto.id)
+        return await this.getById(idDisponibles[Math.floor(Math.random() * idDisponibles.length)]);
+    }
 }
 
-const test = async () => {
+module.exports = Contenedor
 
-    let archivito = new Contenedor("test.JSON")
-
-    await archivito.save({
-        nombre: 'mandarina', 
-        URL: 'No la se', 
-        precio: 450,
-    }).then(resp => console.log("elemento guardado: \n", resp))
-
-    await archivito.getById(3).then(resp => console.log("objeto encontrado: \n", resp))
-    
-    await archivito.getAll().then(resp => console.log("El archivo contiene: \n", resp))
-
-    await archivito.deleteById(3).then(console.log("elemento eliminado\n"))
-
-    await archivito.getAll().then(resp => console.log("El archivo contiene: \n", resp))
-
-    await archivito.deleteAll().then(console.log("Archivo formateado\n"))
-
-    return "Test Finalizado"
-    
-}
-
-console.log("Corriendo Test: \n")
-
-test().then(console.log)
 
 
 
