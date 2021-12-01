@@ -1,32 +1,38 @@
 [
     {
         "nombre": "Tomate",
-        "URL": "No la se",
+        "uri": "No la se",
         "precio": 250,
         "id": 1
     },
     {
         "nombre": "Peras",
-        "URL": "No la se",
+        "uri": "No la se",
         "precio": 150,
         "id": 2
     },
     {
         "nombre": "sandia",
-        "URL": "No la se",
+        "uri": "No la se",
         "precio": 450,
         "id": 4
     },
     {
         "nombre": "Naranja",
-        "URL": "No la se",
+        "uri": "No la se",
         "precio": 450,
         "id": 5
     },
     {
         "nombre": "test5",
-        "URL": "no la se",
+        "uri": "no la se",
         "precio": "1500",
         "id": 6
+    },
+    {
+        "nombre": "testForm",
+        "uri": "no la se",
+        "precio": "3500",
+        "id": 7
     }
 ]

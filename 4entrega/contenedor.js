@@ -55,7 +55,7 @@ class Contenedor {
         let index = this.productos.findIndex(item => item.id == id)
         this.productos[index] = {
             nombre: obj.nombre,
-            URL: obj.URL,
+            uri: obj.uri,
             precio: obj.precio,
             id: parseInt(id)
         }

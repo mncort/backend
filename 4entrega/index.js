@@ -18,7 +18,6 @@ const server = app.listen(server_port, server_host, () => {
 
 server.on("error", error => console.log(`El servidor ha sufrido un error ${error}`))
 
-
 router.get('/productos', (request, response) => {
     archivo.getAll()
         .then(data => response.send(data))
@@ -42,7 +41,7 @@ router.post('/productos', (request, response) => {
     archivo.save(
         {
             "nombre": request.body.nombre,
-            "URL": request.body.URL,
+            "uri": request.body.uri,
             "precio": request.body.precio
         }
     ).then(data => archivo.getById(data).then(resp => response.send(resp)))
@@ -53,7 +52,7 @@ router.put('/productos/:id', (request, response) => {
     archivo.updateById(request.params.id,
         {
             "nombre": request.body.nombre,
-            "URL": request.body.URL,
+            "uri": request.body.uri,
             "precio": request.body.precio
         }
     ).then(data => archivo.getById(data).then(resp => response.send(resp)))
@@ -66,3 +65,7 @@ router.delete('/productos/:id', (request, response) => {
 })
 
 app.use('/api', router)
+
+app.get('/',(request, response) => {
+    response.sendFile(__dirname + '/home.html')
+})
