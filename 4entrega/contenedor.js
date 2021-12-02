@@ -23,8 +23,15 @@ class Contenedor {
         return Math.max(...this.productos.map(item => item?.id || 1)) 
     }
     async getById(id){
-        await this.getAll()
-        return await this.productos.find(item => item.id == id)
+        try{
+            await this.getAll()
+            let variable = this.productos.find(item => item.id == id) || false
+            if(!variable) throw false
+            return variable
+        }catch(e){
+            throw new Error()
+        }
+        
     }
     async getAll(){
         this.productos = JSON.parse(await this.archivo.check())
@@ -33,11 +40,13 @@ class Contenedor {
     async deleteById(id){
         try{
             await this.getAll()
-            let index = this.productos.findIndex(item => item.id == id)
+            let index = this.productos.findIndex(item => item.id == id) || false
+            if(!index) throw false
             this.productos.splice(index, 1);
             await this.archivo.escribir(this.productos)
         }catch(e){
             console.error("Se re pico", e)
+            throw new Error()
         }  
     }
     async deleteAll(){
@@ -51,15 +60,20 @@ class Contenedor {
         return await this.getById(idDisponibles[Math.floor(Math.random() * idDisponibles.length)]);
     }
     async updateById(id, obj){
-        await this.getAll()
-        let index = this.productos.findIndex(item => item.id == id)
-        this.productos[index] = {
-            nombre: obj.nombre,
-            uri: obj.uri,
-            precio: obj.precio,
-            id: parseInt(id)
+        try{
+            await this.getAll()
+            let index = this.productos.findIndex(item => item.id == id) || null
+            this.productos[index] = {
+                nombre: obj.nombre,
+                uri: obj.uri,
+                precio: obj.precio,
+                id: parseInt(id)
+            }
+            await this.archivo.escribir(this.productos) 
+        }catch(e){
+            console.error("actualizando tiro error: ", e)
         }
-        await this.archivo.escribir(this.productos)    
+           
     }
 }
 
