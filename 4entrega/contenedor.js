@@ -26,10 +26,10 @@ class Contenedor {
         try{
             await this.getAll()
             let variable = this.productos.find(item => item.id == id) || false
-            if(!variable) throw false
+            if(!variable) throw new Error("no se encontro el producto")
             return variable
         }catch(e){
-            throw new Error()
+            throw new Error("no se encontro el producto")
         }
         
     }
@@ -40,13 +40,15 @@ class Contenedor {
     async deleteById(id){
         try{
             await this.getAll()
-            let index = this.productos.findIndex(item => item.id == id) || false
-            if(!index) throw false
+            let index = this.productos.findIndex(item => item.id == id)
+            if(index == -1) {
+                throw new Error("el producto no existe")
+            }
+            
             this.productos.splice(index, 1);
             await this.archivo.escribir(this.productos)
         }catch(e){
-            console.error("Se re pico", e)
-            throw new Error()
+            throw new Error("el producto no existe")
         }  
     }
     async deleteAll(){
@@ -62,7 +64,8 @@ class Contenedor {
     async updateById(id, obj){
         try{
             await this.getAll()
-            let index = this.productos.findIndex(item => item.id == id) || null
+            let index = this.productos.findIndex(item => item.id == id)
+            if (index == -1) throw new Error("El producto no existe")
             this.productos[index] = {
                 nombre: obj.nombre,
                 uri: obj.uri,
@@ -71,7 +74,7 @@ class Contenedor {
             }
             await this.archivo.escribir(this.productos) 
         }catch(e){
-            console.error("actualizando tiro error: ", e)
+            throw new Error(e.message)
         }
            
     }

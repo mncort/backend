@@ -27,7 +27,7 @@ router.get('/productos', (request, response) => {
 router.get('/productos/:id', (request, response) => {
     archivo.getById(request.params.id)
         .then(data => response.send(data))
-        .catch(e => response.send({error: 'producto no encontrado'}))
+        .catch(e => response.status(404).send(e.message))
 })
 
 router.get('/productoRandom', (request, response) => {
@@ -59,15 +59,15 @@ router.put('/productos/:id', (request, response) => {
         data => 
             archivo.getById(data)
             .then(resp => response.send(resp))
-            .catch(e => response.send({error: 'producto no encontrado'}))
-    )
+            .catch(e => response.status(404).send(e.message))
+    ).catch(e => response.status(404).send("error update: " + e.message))
 })
 
 router.delete('/productos/:id', (request, response) => {
     
     archivo.deleteById(request.params.id)
             .then(data => response.send("elemento eliminado"))
-            .catch(e => response.send({error: 'producto no encontrado'}))
+            .catch(e => response.status(404).send(e.message))
 })
 
 app.use('/api', router)
