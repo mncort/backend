@@ -1,0 +1,39 @@
+doctype html
+html(lang='es')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css', rel='stylesheet', integrity='sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3', crossorigin='anonymous')
+    title Con PUG
+
+  body.container.bg-light
+    header
+      nav.navbar.navbar-expand-lg.navbar-light.bg-light 
+        div.container-fluid
+          button.navbar-toggler(type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation")
+            span.navbar-toggler-icon 
+          div.collapse.navbar-collapse(id="navbarNav") 
+            ul.navbar-nav
+              li.nav-item 
+                a.nav-link(aria-current='page', href='/') Formulario    
+              li.nav-item 
+                a.nav-link(href='/productos') Productos
+
+    h2.text.mt-4 Productos cargados
+    if productos.length == 0
+      h5.alert-danger.rounded No hay productos cargados
+    else
+      div.row     
+        each producto in productos
+            div.col-3.card.mb-3.mx-1(style="max-width: 540px;")
+              div.row
+                div.col-md-4
+                  img.img-fluid.rounded-start(src=producto.uri alt=producto.nombre)
+              div.col-md
+                div.card-body
+                  h5.card-title= producto.nombre
+                  p.card-text= producto.precio
+                  p.card-text 
+                    small.text-muted= "ID: " +producto.id
+
+    script(src='https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js', integrity='sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p', crossorigin='anonymous')
