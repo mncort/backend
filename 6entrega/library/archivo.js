@@ -17,7 +17,7 @@ class Archivo{
         try{
             return await fs.readFile(this.nombre, "utf8")
         }catch(e){
-            return await this.escribir("")
+            return await this.escribir([])
         }   
     }
 

@@ -1,6 +1,7 @@
 const express = require("express")
 const { Router } = express
 const Contenedor = require('./library/contenedor')
+const ContenedorMensajes = require('./library/mensajes')
 const handlebars = require('express-handlebars');
 const { Server: HttpServer } = require('http')
 const { Server: IOServer } = require('socket.io')
@@ -17,13 +18,51 @@ const io = new IOServer(httpServer)
 app.use(express.urlencoded({extended: true}))
 
 let archivo = new Contenedor("./data/test.JSON")
+let chat = new ContenedorMensajes("./data/mensajes.JSON")
 
-const server = app.listen(server_port, server_host, () => {
-    console.log(`El servidor esta escuchando en el puerto: ${server.address().port}`)
-    archivo.getAll().then(data => console.log(`La 'base de datos' cargo con exito ${data.length} registros`))
+let serverChat = []
+
+
+httpServer.listen(server_port,function(){
+    console.log(`HTTP server runing`)
+    archivo.getAll().then(data => console.log(`La 'base de datos' cargo con exito ${data.length} productos`))
+    chat.getAll().then(data => console.log(`La 'base de datos' cargo con exito ${data.length} mensajes`))
 })
 
-server.on("error", error => console.log(`El servidor ha sufrido un error ${error}`))
+io.on("connection", (socket) => {
+
+    io.sockets.emit('recienConectado', archivo.productos)
+    io.sockets.emit('mensajes', chat.mensajes)
+
+    socket.on('new-product', (data) => {
+        console.log("data",data)
+        archivo.save(
+            {
+                "nombre"  : data.nombre,
+                "precio"  : data.precio,
+                "uri"     : data.uri
+            }
+        ).then(resp => archivo.getAll().then(productos => io.sockets.emit('productos', productos )) )
+    })
+
+    socket.on('eliminar', (id) =>{
+        archivo.deleteById(id)
+        .then(res => archivo.getAll().then(productos => io.sockets.emit('productos', productos )) )
+    })
+    socket.on('new-mensaje', (mensaje) =>{
+        chat.save(
+            {
+                "date": Date.now(),
+                "texto": mensaje.texto,
+                "usuario": mensaje.usuario
+            }
+        ).then(res => chat.getAll().then(resp => io.sockets.emit('mensajes', resp)))
+        
+    })
+
+})
+
+app.use(express.static('./public'))
 
 app.use('/api', router)
 
@@ -39,7 +78,11 @@ app.set('views', './views')
 app.set('views engine', 'hbs')
 
 app.get('/',(request, response) => {
-    return response.render('handlebars/index.hbs')
+    let scripts = [
+        { script: '/socket.io/socket.io.js' },
+        { script: './mainhbs.js'}
+    ]
+    return response.render('handlebars/index.hbs', {scripts})
 })
 
 app.get('/productos', (request, response) => {
@@ -64,6 +107,8 @@ router.get('/productoRandom', (request, response) => {
 })
 
 router.post('/productos', (request, response) => {
+
+    console.log(request.params)
     
     archivo.save(
         {
