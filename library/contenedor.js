@@ -1,19 +1,16 @@
-const Archivo = require('./archivo')
+const BBDD = require('./BBDDconect')
 
 class Contenedor {
     constructor(archivo){
         this.lastId = 0
         this.productos = []
-        this.archivo = new Archivo(archivo)
+        this.archivo = new BBDD(archivo)
         
     }
     async save(objeto){
         try{
-            await this.getAll().then(data => this.lastId = this.maxId())
-            this.lastId++
-            this.productos.push({...objeto, id: this.lastId})
-            await this.archivo.escribir(this.productos)
-            return this.lastId
+            let [producto] = await this.archivo.escribir(objeto)
+            return producto
         }catch(e){
             console.error("Se re pico", e)
         }  
@@ -24,9 +21,8 @@ class Contenedor {
     }
     async getById(id){
         try{
-            await this.getAll()
-            let variable = this.productos.find(item => item.id == id) || false
-            if(!variable) throw new Error("no se encontro el producto")
+            let variable = await this.archivo.getById(id)
+            if(variable.length == 0) throw new Error("no se encontro el producto")
             return variable
         }catch(e){
             throw new Error("no se encontro el producto")
@@ -34,7 +30,8 @@ class Contenedor {
         
     }
     async getAll(){
-        this.productos = JSON.parse(await this.archivo.check())
+        this.productos = await this.archivo.traerTodos()
+        console.log(this.productos)
         return this.productos
     }
     async deleteById(id){
@@ -44,23 +41,18 @@ class Contenedor {
             if(index == -1) {
                 throw new Error("el producto no existe")
             }
-            
-            this.productos.splice(index, 1);
-            await this.archivo.escribir(this.productos)
+            await this.archivo.deleteById(id)
+            await this.getAll()
         }catch(e){
             throw new Error("el producto no existe")
         }  
     }
+
     async deleteAll(){
-        await this.getAll()
-        this.productos = []
-        await this.archivo.escribir(this.productos)
+        await this.archivo.vaciarTabla()
+        return await this.getAll()
     }
-    async getRandom(){
-        await this.getAll()
-        let idDisponibles = this.productos.map(producto => producto.id)
-        return await this.getById(idDisponibles[Math.floor(Math.random() * idDisponibles.length)]);
-    }
+
     async updateById(id, obj){
         try{
             await this.getAll()

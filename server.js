@@ -17,7 +17,7 @@ const io = new IOServer(httpServer)
 
 app.use(express.urlencoded({extended: true}))
 
-let archivo = new Contenedor("./data/test.JSON")
+let archivo = new Contenedor("PRODUCTOS")
 let chat = new ContenedorMensajes("./data/mensajes.JSON")
 
 let serverChat = []
@@ -35,7 +35,6 @@ io.on("connection", (socket) => {
     io.sockets.emit('mensajes', chat.mensajes)
 
     socket.on('new-product', (data) => {
-        console.log("data",data)
         archivo.save(
             {
                 "nombre"  : data.nombre,
@@ -139,6 +138,12 @@ router.delete('/productos/:id', (request, response) => {
     
     archivo.deleteById(request.params.id)
             .then(data => response.send("elemento eliminado"))
+            .catch(e => response.status(404).send(e.message))
+})
+
+router.delete('/productos', (request, response) => {
+    archivo.deleteAll()
+            .then(data => response.send("elementos eliminados"))
             .catch(e => response.status(404).send(e.message))
 })
 
