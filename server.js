@@ -1,145 +1,163 @@
 const express = require("express")
 const { Router } = express
-const Contenedor = require('./library/contenedor')
-const ContenedorMensajes = require('./library/mensajes')
-const handlebars = require('express-handlebars');
+const ClassProductos = require('./library/classProductos')
+const ClassCarritos = require('./library/classCarrito')
 const { Server: HttpServer } = require('http')
-const { Server: IOServer } = require('socket.io')
+const bodyparser = require('body-parser')
 
-
-var server_port = process.env.YOUR_PORT || process.env.PORT || 5000;
+var server_port = process.env.YOUR_PORT || process.env.PORT || 8080;
 var server_host = process.env.YOUR_HOST || '0.0.0.0';
 
 const app = express()
+app.use(bodyparser.json())
 const router = Router();
+const productos = Router();
+const carrito = Router();
 const httpServer = new HttpServer(app)
-const io = new IOServer(httpServer)
 
 app.use(express.urlencoded({extended: true}))
 
-let archivo = new Contenedor("./data/test.JSON")
-let chat = new ContenedorMensajes("./data/mensajes.JSON")
+let productList = new ClassProductos("./data/listaProductos.JSON")
+let listCarritos = new ClassCarritos("./data/listaCarritos.JSON")
 
-let serverChat = []
-
+let admin = false;
 
 httpServer.listen(server_port,function(){
     console.log(`HTTP server runing`)
-    archivo.getAll().then(data => console.log(`La 'base de datos' cargo con exito ${data.length} productos`))
-    chat.getAll().then(data => console.log(`La 'base de datos' cargo con exito ${data.length} mensajes`))
-})
-
-io.on("connection", (socket) => {
-
-    io.sockets.emit('recienConectado', archivo.productos)
-    io.sockets.emit('mensajes', chat.mensajes)
-
-    socket.on('new-product', (data) => {
-        console.log("data",data)
-        archivo.save(
-            {
-                "nombre"  : data.nombre,
-                "precio"  : data.precio,
-                "uri"     : data.uri
-            }
-        ).then(resp => archivo.getAll().then(productos => io.sockets.emit('productos', productos )) )
-    })
-
-    socket.on('eliminar', (id) =>{
-        archivo.deleteById(id)
-        .then(res => archivo.getAll().then(productos => io.sockets.emit('productos', productos )) )
-    })
-    socket.on('new-mensaje', (mensaje) =>{
-        chat.save(
-            {
-                "date": Date.now(),
-                "texto": mensaje.texto,
-                "usuario": mensaje.usuario
-            }
-        ).then(res => chat.getAll().then(resp => io.sockets.emit('mensajes', resp)))
-        
-    })
-
+    productList.getAll().then(data => console.log(`La 'base de datos' cargo con exito ${data.length} productos`))
+    listCarritos.getAll().then(data => console.log(`La 'base de datos' cargo con exito ${data.length} carritos`)).then(resp => console.log)
 })
 
 app.use(express.static('./public'))
 
 app.use('/api', router)
+router.use('/productos', productos)
+router.use('/carrito', carrito)
 
-app.engine(
-    "hbs",
-    handlebars.engine({
-        extname: ".hbs",
-        partialsDir: __dirname + "/views/partials"
-    })
-)
+app.get('/',(request, response) => {})
 
-app.set('views', './views')
-app.set('views engine', 'hbs')
-
-app.get('/',(request, response) => {
-    let scripts = [
-        { script: '/socket.io/socket.io.js' },
-        { script: './mainhbs.js'}
-    ]
-    return response.render('handlebars/index.hbs', {scripts})
+router.get('/isAdmin',(request, response) => {
+    response.send(admin)
 })
 
-app.get('/productos', (request, response) => {
-    archivo.getAll()
-        .then(productos => {
-            let showList = productos.length !==0
-            response.render('handlebars/productos.hbs', {productos, showList})
-        })
+router.put('/setAdmin',(request, response) => {
+    admin = !admin
+    response.send("ok")
+})
+
+productos.get('/',(request, response) => {
+    productList.getAll()
+        .then(
+            data => response.send(data)
+        )
         .catch(e => console.log)
 })
 
-router.get('/productos/:id', (request, response) => {
-    archivo.getById(request.params.id)
+productos.get('/:id', (request, response) => {
+    productList.getById(request.params.id)
+        .then(data => response.send(data))
+        .catch(e => response.status(400).send(e.message))
+})
+
+productos.post('/', (request, response) => {
+  
+    if(admin){
+        productList.save(
+            {
+                "timestamp": Date.now(),
+                "nombre": request.body.nombre,
+                "descripcion": request.body.descripcion,
+                "codigo": request.body.codigo,
+                "foto": request.body.foto,
+                "precio": request.body.precio,
+                "stock": request.body.stock,
+            }
+        ).then(resp => response.status(200).send(resp.toString()))
+        .catch(e => response.status(400).send(e.message))
+    }else{
+        let e = new Error('ruta api/productos metodo post no autorizada')
+        response.status(400).send(e.message)
+    }
+    
+})
+
+productos.put('/:id', (request, response) => {
+
+    console.log(request.body)
+
+    if(admin){
+        productList.updateById(request.params.id,
+            {
+                "timestamp": Date.now(),
+                "nombre": request.body.nombre,
+                "descripcion": request.body.descripcion,
+                "codigo": request.body.codigo,
+                "foto": request.body.foto,
+                "precio": request.body.precio,
+                "stock": request.body.stock
+            }
+        ).then(
+            data => 
+            productList.getById(data)
+                .then(resp => response.send(resp))
+                .catch(e => response.status(404).send(e.message))
+        ).catch(e => response.status(404).send("error update: " + e.message))
+    }else{
+        let e = new Error('ruta api/productos/:id metodo put no autorizada')
+        response.status(400).send(e.message)
+    }
+})
+
+productos.delete('/:id', (request, response) => {
+
+    if(admin){    
+        productList.deleteById(request.params.id)
+            .then(data => response.send("elemento eliminado"))
+            .catch(e => response.status(404).send(e.message))
+    }else{
+        let e = new Error('ruta api/productos/:id metodo delete no autorizada')
+        response.status(400).send(e.message)
+    }
+})
+
+carrito.post('/', (request, response) => {
+    listCarritos.new()
+        .then(resp => {
+            console.log(resp)
+            response.status(201).send(resp)
+        })
+        .catch(e => response.status(400).send(e.message))
+})
+
+carrito.delete('/:id', (request, response) => {
+ 
+    listCarritos.deleteById(request.params.id)
+        .then(data => response.send("carrito eliminado"))
+        .catch(e => response.status(404).send(e.message))
+})
+
+carrito.get('/:id/productos', (request, response) => {
+   
+    listCarritos.getProductosById(request.params.id)
         .then(data => response.send(data))
         .catch(e => response.status(404).send(e.message))
 })
 
-router.get('/productoRandom', (request, response) => {
-    archivo.getRandom()
-        .then(data => response.send(data))
-        .catch(e => console.log)
+carrito.post('/:id/productos', (request, response) => {
+  
+    productList.getById(request.body.id)
+        .then(resp => {
+            listCarritos.pushProducto(request.params.id, resp)
+                .then(resp => response.status(200).send(resp))
+                .catch(e => response.status(404).send(e.message))
+        })
+        .catch(e => response.status(404).send(e.message))
 })
 
-router.post('/productos', (request, response) => {
-
-    console.log(request.params)
-    
-    archivo.save(
-        {
-            "nombre": request.body.nombre,
-            "uri": request.body.uri,
-            "precio": request.body.precio
-        }
-    ).then(resp => response.redirect('/'))
+carrito.delete('/:id/productos/:id_prod', (request, response) => {
+  
+    listCarritos.deleteProducto(request.params.id, request.params.id_prod)
+        .then(resp => response.status(200).send(resp))
+        .catch(e => response.status(404).send(e.message))
 })
-
-router.put('/productos/:id', (request, response) => {
-    
-    archivo.updateById(request.params.id,
-        {
-            "nombre": request.body.nombre,
-            "uri": request.body.uri,
-            "precio": request.body.precio
-        }
-    ).then(
-        data => 
-            archivo.getById(data)
-            .then(resp => response.send(resp))
-            .catch(e => response.status(404).send(e.message))
-    ).catch(e => response.status(404).send("error update: " + e.message))
-})
-
-router.delete('/productos/:id', (request, response) => {
-    
-    archivo.deleteById(request.params.id)
-            .then(data => response.send("elemento eliminado"))
-            .catch(e => response.status(404).send(e.message))
-})
-
 

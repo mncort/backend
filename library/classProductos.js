@@ -1,6 +1,6 @@
 const Archivo = require('./archivo')
 
-class Contenedor {
+class ClassProductos {
     constructor(archivo){
         this.lastId = 0
         this.productos = []
@@ -20,8 +20,11 @@ class Contenedor {
     }
 
     maxId(){
-        return Math.max(...this.productos.map(item => item?.id || 1)) 
+        if(this.productos.length == 0) return 0
+        
+        return Math.max(...this.productos.map(item => item.id))
     }
+
     async getById(id){
         try{
             await this.getAll()
@@ -31,12 +34,13 @@ class Contenedor {
         }catch(e){
             throw new Error("no se encontro el producto")
         }
-        
     }
+
     async getAll(){
         this.productos = JSON.parse(await this.archivo.check())
         return this.productos
     }
+
     async deleteById(id){
         try{
             await this.getAll()
@@ -44,43 +48,48 @@ class Contenedor {
             if(index == -1) {
                 throw new Error("el producto no existe")
             }
-            
             this.productos.splice(index, 1);
             await this.archivo.escribir(this.productos)
         }catch(e){
             throw new Error("el producto no existe")
         }  
     }
+
     async deleteAll(){
         await this.getAll()
         this.productos = []
         await this.archivo.escribir(this.productos)
     }
+
     async getRandom(){
         await this.getAll()
         let idDisponibles = this.productos.map(producto => producto.id)
         return await this.getById(idDisponibles[Math.floor(Math.random() * idDisponibles.length)]);
     }
+    
     async updateById(id, obj){
         try{
             await this.getAll()
             let index = this.productos.findIndex(item => item.id == id)
             if (index == -1) throw new Error("El producto no existe")
             this.productos[index] = {
+                id,
+                timestamp: obj.timestamp,
                 nombre: obj.nombre,
-                uri: obj.uri,
+                descripcion: obj.descripcion,
+                codigo: obj.codigo,
+                foto: obj.foto,
                 precio: obj.precio,
-                id: parseInt(id)
+                stock: obj.stock
             }
             await this.archivo.escribir(this.productos) 
         }catch(e){
             throw new Error(e.message)
         }
-           
     }
 }
 
-module.exports = Contenedor
+module.exports = ClassProductos
 
 
 
